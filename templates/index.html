@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Kai - Tutor IA</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        #chat { border: 1px solid #ccc; height: 400px; overflow-y: auto; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
+        .usuario { text-align: right; color: blue; margin: 5px 0; }
+        .kai { text-align: left; color: green; margin: 5px 0; }
+        input { width: 80%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🤖 Kai - Tutor de Programación</h1>
+    <div id="chat"></div>
+    <input type="text" id="mensaje" placeholder="Escribe tu pregunta..." />
+    <button onclick="enviar()">Enviar</button>
+
+    <script>
+        async function enviar() {
+            const mensaje = document.getElementById("mensaje").value;
+            if (!mensaje) return;
+
+            const chat = document.getElementById("chat");
+            chat.innerHTML += `<p class="usuario">Tú: ${mensaje}</p>`;
+            document.getElementById("mensaje").value = "";
+
+            const response = await fetch("/preguntar", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({mensaje})
+            });
+
+            const data = await response.json();
+            chat.innerHTML += `<p class="kai">Kai: ${data.respuesta}</p>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        document.getElementById("mensaje").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") enviar();
+        });
+    </script>
+</body>
+</html>
