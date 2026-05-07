@@ -1,15 +1,16 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
+from database import crear_tabla, guardar_mensaje, cargar_historial
 import requests
 import os
-from flask import Flask, request, jsonify, render_template
 
 load_dotenv()
 API_KEY = os.getenv("OPENROUTER_API_KEY")
-MODELO = "inclusionai/ling-2.6-1t:free"
+MODELO = "nvidia/nemotron-3-super-120b-a12b:free"
+SYSTEM_PROMPT = "Eres un tutor de programación experto llamado Kai. Explicas todo simple y con ejemplos prácticos."
 
 app = Flask(__name__)
-historial = [{"role": "system", "content": "Eres un tutor de programación llamado Kai. Respondes de forma simple y práctica."}]
+crear_tabla()
 
 @app.route("/")
 def inicio():
@@ -19,9 +20,11 @@ def inicio():
 def preguntar():
     datos = request.json
     mensaje = datos["mensaje"]
-    
-    historial.append({"role": "user", "content": mensaje})
-    
+    guardar_mensaje("user", mensaje)
+
+    historial = [{"role": "system", "content": SYSTEM_PROMPT}]
+    historial += cargar_historial()
+
     try:
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
@@ -34,10 +37,12 @@ def preguntar():
                 "messages": historial
             }
         )
+        print("RESPUESTA API:", response.json())
         respuesta = response.json()["choices"][0]["message"]["content"]
-        historial.append({"role": "assistant", "content": respuesta})
+        guardar_mensaje("assistant", respuesta)
         return jsonify({"respuesta": respuesta})
     except Exception as e:
+        print(f"ERROR: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
